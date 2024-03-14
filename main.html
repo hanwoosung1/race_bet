@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>동물 경주 게임</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<style>
+    body {
+        font-family: 'Arial', sans-serif;
+        text-align: center;
+        margin: 20px;
+        background-color: #6db1ff; /* 운동장 느낌의 배경색 */
+    }
+
+    #raceTrack {
+        width: 90%;
+        max-width: 600px; /* 최대 너비 설정 */
+        height: auto; /* 높이를 자동으로 조절 */
+        position: relative;
+        overflow: hidden;
+        background-color: #e0e0e0;
+        margin: 20px auto;
+        border: 2px solid #000;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); /* 경기장의 그림자 효과 */
+    }
+
+    .animal {
+        position: absolute;
+        font-size: calc(24px + 2vmin); /* 반응형 폰트 크기 */
+        will-change: transform;
+    }
+
+    .track {
+        border-top: 1px solid #000;
+        position: absolute;
+        width: 100%;
+    }
+
+    button {
+        margin: 10px;
+        padding: 10px 20px;
+        font-size: 16px;
+        cursor: pointer;
+        background-color: #4CAF50; /* 버튼 색상 */
+        color: white;
+        border: none;
+        border-radius: 5px; /* 버튼 모서리 둥글게 */
+        transition: background-color 0.3s; /* 버튼 호버 효과 */
+    }
+
+    button:hover {
+        background-color: #45a049;
+    }
+
+    #timer {
+        font-size: 24px;
+        font-weight: bold;
+        margin: 20px 0;
+    }
+
+    #results {
+        margin-top: 20px;
+    }
+
+</style>
+<body>
+<div id="raceTrack"></div>
+<button id="startRace">경주 시작</button>
+<button id="addAnimal">동물 추가</button>
+<div id="timer"></div>
+<div id="results"></div>
+<script src="script.js"></script>
+</body>
+</html>
+
+<script type="text/javascript">
+    let animals = [
+        { name: "🐱", speed: Math.random() * 1000 + 3000 },
+        { name: "🐶", speed: Math.random() * 1000 + 3000 },
+        { name: "🐰", speed: Math.random() * 1000 + 3000 },
+        { name: "🐢", speed: Math.random() * 1000 + 3000 }
+    ];
+    const animalIcons = ["🐱", "🐶", "🐰", "🐢", "🦊", "🐮", "🐔", "🐧"];
+    const raceTrack = document.getElementById('raceTrack');
+    const results = document.getElementById('results');
+    const timer = document.getElementById('timer');
+    let isRacing = false; // 경기 상태를 추적하는 플래그
+
+    document.getElementById('addAnimal').addEventListener('click', () => {
+        if (animals.length < animalIcons.length && !isRacing) {
+            const newAnimalIcon = animalIcons[animals.length % animalIcons.length];
+            animals.push({ name: newAnimalIcon, speed: Math.random() * 1000 + 3000 });
+            addAnimalToTrack();
+        }
+    });
+
+    document.getElementById('startRace').addEventListener('click', () => {
+        if (!isRacing) {
+            isRacing = true; // 경주 시작 상태로 설정
+            document.getElementById('startRace').disabled = true; // 버튼 비활성화
+            startRace();
+        }
+    });
+
+    function addAnimalToTrack() {
+        raceTrack.innerHTML = ''; // 트랙 초기화
+        raceTrack.style.height = `${100 * animals.length}px`; // 트랙 높이 동적 조절
+
+        animals.forEach((animal, index) => {
+            const track = document.createElement('div');
+            track.classList.add('track');
+            track.style.top = `${index * 100 + 50}px`;
+            const animalElement = document.createElement('div');
+            animalElement.classList.add('animal');
+            animalElement.textContent = animal.name;
+            animalElement.style.top = `${index * 100 + 50 - 24}px`; // 중앙 정렬
+            raceTrack.appendChild(track);
+            raceTrack.appendChild(animalElement);
+            animal.element = animalElement; // 경주에 사용될 HTML 요소 저장
+        });
+    }
+
+    function startRace() {
+        results.textContent = ""; // 이전 결과 클리어
+        let ranking = 1;
+
+        let countdown = 3;
+        timer.textContent = countdown;
+        const countdownInterval = setInterval(() => {
+            countdown -= 1;
+            timer.textContent = countdown;
+            if (countdown === 0) {
+                clearInterval(countdownInterval);
+                timer.textContent = '';
+
+                animals.forEach(animal => {
+                    animal.speed = Math.random() * 1000 + 3000; // 속도 랜덤 설정
+                    const trackWidth = raceTrack.offsetWidth - animal.element.offsetWidth;
+                    animal.element.style.transform = 'translateX(0)'; // 위치 리셋
+                    animal.element.animate([
+                        { transform: `translateX(0)` },
+                        { transform: `translateX(${trackWidth}px)` }
+                    ], {
+                        duration: animal.speed,
+                        fill: 'forwards'
+                    }).onfinish = () => {
+                        if (isRacing) { // 경주 중일 때만 결과 처리
+                            const result = document.createElement('div');
+                            result.textContent = `${animal.name}가 ${ranking++}등으로 도착했습니다!`;
+                            results.appendChild(result);
+                            if (ranking > animals.length) {
+                                isRacing = false; // 모든 동물이 도착하면 경주 종료
+                                document.getElementById('startRace').disabled = false; // 버튼 활성화
+                            }
+                        }
+                    };
+                });
+            }
+        }, 1000);
+    }
+
+    addAnimalToTrack(); // 페이지 로드 시 초기 동물들을 트랙에 추가
+
+</script>
